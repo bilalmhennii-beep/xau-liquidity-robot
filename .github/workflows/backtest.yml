@@ -1,0 +1,33 @@
+name: xau-sample-backtest
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Download public XAUUSD M1 evaluation sample
+        run: |
+          mkdir -p data results
+          curl -L --fail --retry 3 -o data/XAUUSD_1m.csv https://raw.githubusercontent.com/getdata-finance/xauusd-1m-ohlcv-metals-historical-data/main/XAUUSD_1m.csv
+      - name: Validate data
+        run: |
+          python - <<'PY'
+          from src.data import load_ohlc
+          from src.validate import validate
+          d=load_ohlc("data/XAUUSD_1m.csv")
+          print(validate(d))
+          PY
+      - name: Run baseline
+        run: python -m src.backtest data/XAUUSD_1m.csv | tee results/summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xau-baseline-results
+          path: results/
