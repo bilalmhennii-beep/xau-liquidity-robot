@@ -37,6 +37,11 @@ jobs:
         run: |
           set -o pipefail
           python -m src.hybrid_micro data/XAUUSD_1m.csv | tee results/hybrid-summary.txt
+      - name: Run ICT SMC V2
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m src.ict_smc_v2 data/XAUUSD_1m.csv | tee results/ict-smc-v2-summary.txt
       - name: Run selective sweep
         run: python scripts/run_sweep.py data/XAUUSD_1m.csv | tee results/sweep-summary.txt
       - uses: actions/upload-artifact@v4
