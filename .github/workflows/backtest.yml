@@ -37,6 +37,11 @@ jobs:
         run: |
           set -o pipefail
           python -m src.hybrid_micro data/XAUUSD_1m.csv | tee results/hybrid-summary.txt
+      - name: Run HTF liquidity FVG V3
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m src.htf_liquidity_fvg_v3 data/XAUUSD_1m.csv | tee results/htf-liquidity-fvg-v3-summary.txt
       - name: Run ICT SMC V2
         shell: bash
         run: |
