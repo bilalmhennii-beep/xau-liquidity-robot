@@ -17,32 +17,32 @@ def run_micro(path):
     zones=build_zones(tfs)
     rows=[]
     for z in zones:
-        if z.get("score",0)<70: continue
-        available=z.get("available_at",z.get("created_at"))
+        if z.score < 70: continue
+        available=z.created
         future=bars[bars.index>=available]
         if future.empty: continue
-        key=float(z.get("key",(z["low"]+z["high"])/2))
-        side=z["side"]
+        key=float(z.key)
+        side=z.side
         touched=future[(future.low<=key)&(future.high>=key)]
         if touched.empty: continue
         ts=touched.index[0]; pos=bars.index.get_indexer([ts])[0]
         window=bars.iloc[pos:min(pos+MAX_HOLD_BARS,len(bars))]
         # Executable entry: buy pays ask; sell hits bid. Spread is explicitly charged once at entry.
-        entry=key + SPREAD_PRICE/2 if side=="long" else key-SPREAD_PRICE/2
-        tp=entry+TP_PRICE if side=="long" else entry-TP_PRICE
-        sl=entry-SL_PRICE if side=="long" else entry+SL_PRICE
+        entry=key + SPREAD_PRICE/2 if side=="BUY" else key-SPREAD_PRICE/2
+        tp=entry+TP_PRICE if side=="BUY" else entry-TP_PRICE
+        sl=entry-SL_PRICE if side=="BUY" else entry+SL_PRICE
         outcome=0
         exit_price=float(window.close.iloc[-1])
         for _,b in window.iterrows():
             # Conservative ambiguity: SL first when both occur in same M1 bar.
-            if side=="long":
+            if side=="BUY":
                 if b.low<=sl: outcome=-1; exit_price=sl-SLIPPAGE_PRICE; break
                 if b.high>=tp: outcome=1; exit_price=tp-SLIPPAGE_PRICE; break
             else:
                 if b.high>=sl: outcome=-1; exit_price=sl+SLIPPAGE_PRICE; break
                 if b.low<=tp: outcome=1; exit_price=tp+SLIPPAGE_PRICE; break
         pnl=(exit_price-entry)*(1 if side=="long" else -1)*USD_PER_1_MOVE_PER_LOT*LOT
-        rows.append({"touch":ts,"tf":z["tf"],"kind":z["kind"],"side":side,"score":z["score"],
+        rows.append({"touch":ts,"tf":z.tf,"kind":z.kind,"side":side,"score":z.score,
                      "entry":entry,"tp":tp,"sl":sl,"outcome":outcome,"pnl_usd":pnl})
     out=pd.DataFrame(rows)
     os.makedirs("results",exist_ok=True); out.to_csv("results/micro_trades.csv",index=False)
