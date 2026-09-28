@@ -28,7 +28,10 @@ jobs:
       - name: Run baseline
         run: python -m src.backtest data/XAUUSD_1m.csv | tee results/summary.txt
       - name: Run MICRO 1:1 scalp test
-        run: python -m src.micro_backtest data/XAUUSD_1m.csv | tee results/micro-summary.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m src.micro_backtest data/XAUUSD_1m.csv | tee results/micro-summary.txt
       - name: Run selective sweep
         run: python scripts/run_sweep.py data/XAUUSD_1m.csv | tee results/sweep-summary.txt
       - uses: actions/upload-artifact@v4
