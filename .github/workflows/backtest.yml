@@ -1,7 +1,7 @@
 name: xau-sample-backtest
 on:
   push:
-    branches: [main]
+    branches: [main, research/fix-micro-pnl-sweep-ci]
   workflow_dispatch:
 jobs:
   backtest:
