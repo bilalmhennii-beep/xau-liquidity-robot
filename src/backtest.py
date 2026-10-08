@@ -41,7 +41,7 @@ def evaluate_first_touch(base5, zones):
         mfe=mae=0.0
         outcome=None
         exit_r=0.0
-        for _,b in path.iterrows():
+        for exit_time,b in path.iterrows():
             if z.side=="BUY":
                 mfe=max(mfe,float(b.high-entry)); mae=max(mae,float(entry-b.low))
                 stop_hit=b.low <= stop
@@ -64,7 +64,7 @@ def evaluate_first_touch(base5, zones):
             outcome="TIME"
         rows.append({"created":z.created,"touch":touch_time,"tf":z.tf,"side":z.side,"kind":z.kind,
                      "score":z.score,"entry":entry,"stop":stop,"r":exit_r,"outcome":outcome,
-                     "mfe":mfe,"mae":mae})
+                     "mfe":mfe,"mae":mae,"exit":exit_time})
     return pd.DataFrame(rows)
 
 def run(csv_path):
