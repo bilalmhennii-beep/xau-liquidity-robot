@@ -26,7 +26,8 @@ def run_micro(path):
         touched=future[(future.low<=key)&(future.high>=key)]
         if touched.empty: continue
         ts=touched.index[0]; pos=bars.index.get_indexer([ts])[0]
-        window=bars.iloc[pos:min(pos+MAX_HOLD_BARS,len(bars))]
+        window=bars.iloc[pos+1:min(pos+1+MAX_HOLD_BARS,len(bars))]
+        if window.empty: continue
         # Executable entry: buy pays ask; sell hits bid. Spread is explicitly charged once at entry.
         entry=key + SPREAD_PRICE/2 if side=="BUY" else key-SPREAD_PRICE/2
         tp=entry+TP_PRICE if side=="BUY" else entry-TP_PRICE
@@ -41,16 +42,16 @@ def run_micro(path):
             else:
                 if b.high>=sl: outcome=-1; exit_price=sl+SLIPPAGE_PRICE; break
                 if b.low<=tp: outcome=1; exit_price=tp+SLIPPAGE_PRICE; break
-        pnl=(exit_price-entry)*(1 if side=="long" else -1)*USD_PER_1_MOVE_PER_LOT*LOT
+        pnl=(exit_price-entry)*(1 if side=="BUY" else -1)*USD_PER_1_MOVE_PER_LOT*LOT
         rows.append({"touch":ts,"tf":z.tf,"kind":z.kind,"side":side,"score":z.score,
                      "entry":entry,"tp":tp,"sl":sl,"outcome":outcome,"pnl_usd":pnl})
     out=pd.DataFrame(rows)
     os.makedirs("results",exist_ok=True); out.to_csv("results/micro_trades.csv",index=False)
     if out.empty: print("No micro trades"); return out
-    closed=out[out.outcome!=0]
+    closed=out  # include time-based exits in all metrics
     gross_win=closed.loc[closed.pnl_usd>0,"pnl_usd"].sum()
     gross_loss=-closed.loc[closed.pnl_usd<0,"pnl_usd"].sum()
-    eq=out.pnl_usd.cumsum(); dd=eq-eq.cummax()
+    eq=pd.concat([pd.Series([0.0]),out.pnl_usd.cumsum().reset_index(drop=True)],ignore_index=True); dd=eq-eq.cummax()
     print({"trades":len(out),"closed":len(closed),"win_rate":float((closed.pnl_usd>0).mean()),
            "net_usd":float(out.pnl_usd.sum()),"avg_usd":float(out.pnl_usd.mean()),
            "profit_factor":float(gross_win/gross_loss) if gross_loss else float("inf"),
