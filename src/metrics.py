@@ -10,8 +10,20 @@ def summarize(trades: pd.DataFrame) -> dict:
     losses = r[r < 0]
     gross_win = wins.sum()
     gross_loss = abs(losses.sum())
-    eq = r.cumsum()
-    dd = eq - eq.cummax()
+
+    # Equity must start at zero R, and realized P&L must be ordered by
+    # trade EXIT time, not by when the signal/zone was discovered.
+    # Trades exiting at the same timestamp form one account equity event.
+    if "exit" in trades.columns:
+        realized = (trades.assign(_realized_r=r)
+                    .groupby("exit", sort=True)["_realized_r"].sum())
+    else:
+        realized = r.reset_index(drop=True)
+    equity = pd.concat(
+        [pd.Series([0.0]), realized.cumsum().reset_index(drop=True)],
+        ignore_index=True,
+    )
+    dd = equity - equity.cummax()
     return {
         "trades": int(len(r)),
         "win_rate": float((r > 0).mean()),
